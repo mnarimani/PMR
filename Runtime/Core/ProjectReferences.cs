@@ -1,3 +1,4 @@
+using System;
 using PMR.Signals;
 using UnityEngine;
 
@@ -9,34 +10,37 @@ using UnityEditor;
 
 namespace PMR
 {
-    public abstract class ProjectReferences<T> : ScriptableObject, ISignalProvider where T : ProjectReferences<T>
+    public abstract class ProjectReferences : ScriptableObject, ISignalProvider
     {
         internal InSceneReferences CurrentScene;
+
+        private protected static Func<ProjectReferences> CreateInstance;
+        
         private SignalBus _signalBus;
-        private static T _instance;
+        private static ProjectReferences _instance;
 
         public SignalBus SignalBus => (_signalBus ??= new SignalBus());
 
         protected internal virtual void DeclareTypes()
         {
-            DeclareSelfAs<T>();
+            DeclareSelfAs<ProjectReferences>();
         }
 
-        protected void DeclareSelfAs<TType>() where TType : ProjectReferences<TType>
+        protected void DeclareSelfAs<TType>() where TType : class
         {
-            CurrentScene.AddType(new ProjectTypeDeclaration<T, TType>());
+            CurrentScene.AddType(new ProjectTypeDeclaration<TType>());
         }
 
-        internal static T GetInstance()
+        internal static ProjectReferences GetInstance()
         {
             const string fileName = "ProjectReferences";
 
             if (_instance == null)
-                _instance = Resources.Load<T>(fileName);
+                _instance = Resources.Load<ProjectReferences>(fileName);
                 
-            if (_instance == null)
+            if (_instance == null && CreateInstance != null)
             {
-                _instance = CreateInstance<T>();
+                _instance = CreateInstance();
 
 #if UNITY_EDITOR
                 if (!Directory.Exists(Application.dataPath + "/Resources"))
@@ -47,6 +51,20 @@ namespace PMR
             }
 
             return _instance;
+        }
+    }
+    
+    public abstract class ProjectReferences<T> : ProjectReferences where T : ProjectReferences<T>
+    {
+        static ProjectReferences()
+        {
+            CreateInstance = CreateInstance<T>;
+        }
+
+        protected internal override void DeclareTypes()
+        {
+            DeclareSelfAs<ProjectReferences<T>>();
+            DeclareSelfAs<T>();
         }
     }
 }

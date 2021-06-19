@@ -22,9 +22,9 @@ namespace PMR.Pools
 
         protected override T OnPushedToPool(T obj)
         {
-            if (_parent == null && _createParent)
+            if (_createParent && _parent == null)
                 _parent = new GameObject(typeof(T).Name + " Pool").transform;
-            
+
             obj.gameObject.SetActive(false);
             obj.transform.SetParent(_parent);
             return obj;

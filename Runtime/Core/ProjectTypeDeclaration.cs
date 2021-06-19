@@ -4,18 +4,17 @@ using UnityEngine;
 
 namespace PMR
 {
-    internal class ProjectTypeDeclaration<TProjImpl,TConcrete> : TypeDeclaration<INeedProjectReferences<TConcrete>> 
-        where TProjImpl : ProjectReferences<TProjImpl> where TConcrete : class
+    internal class ProjectTypeDeclaration<TConcrete> : TypeDeclaration<TConcrete> where TConcrete : class
     {
         public override void CollectAll(GameObject self)
         {
-            List<INeedProjectReferences<TConcrete>> injectables = SingletonList<INeedProjectReferences<TConcrete>>.List;
+            List<IRequire<TConcrete>> injectables = SingletonList<IRequire<TConcrete>>.List;
 
             List<GameObject> rootObjects = SingletonList<GameObject>.List;
             rootObjects.Clear();
             self.scene.GetRootGameObjects(rootObjects);
 
-            List<INeedProjectReferences<TConcrete>> tempList = SceneRootComponentTempList<INeedProjectReferences<TConcrete>>.List;
+            List<IRequire<TConcrete>> tempList = SceneRootComponentTempList<IRequire<TConcrete>>.List;
 
             foreach (GameObject r in rootObjects)
             {
@@ -26,12 +25,12 @@ namespace PMR
 
         public override void Call<T>(T self)
         {
-            List<INeedProjectReferences<TConcrete>> list = SingletonList<INeedProjectReferences<TConcrete>>.List;
-            foreach (INeedProjectReferences<TConcrete> i in list)
+            List<IRequire<TConcrete>> list = SingletonList<IRequire<TConcrete>>.List;
+            foreach (IRequire<TConcrete> i in list)
             {
                 try
                 {
-                    i.Init(ProjectReferences<TProjImpl>.GetInstance() as TConcrete);
+                    i.Init(ProjectReferences.GetInstance() as TConcrete);
                 }
                 catch (Exception e)
                 {

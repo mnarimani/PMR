@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using PMR.Signals;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace PMR
 {
@@ -13,10 +11,10 @@ namespace PMR
 
         private SignalBus _signalBus;
         private bool _isCalling;
-        
+
         private List<ITickable> _tickables;
         private List<IFixedTickable> _fixedTickables;
-        private List<IDisposable> _disposables;
+        private List<IDestroyCallbackReceiver> _disposables;
         private Queue<IAwakable> _pendingInitCalls;
 
         public SignalBus SignalBus => (_signalBus ??= new SignalBus());
@@ -58,11 +56,11 @@ namespace PMR
         {
             if (_disposables != null)
             {
-                foreach (IDisposable d in _disposables)
+                foreach (IDestroyCallbackReceiver d in _disposables)
                 {
                     try
                     {
-                        d.Dispose();
+                        d.OnDestroy();
                     }
                     catch (Exception e)
                     {
@@ -148,9 +146,9 @@ namespace PMR
                 }
             }
 
-            if (obj is IDisposable disposable)
+            if (obj is IDestroyCallbackReceiver disposable)
             {
-                _disposables ??= new List<IDisposable>(1);
+                _disposables ??= new List<IDestroyCallbackReceiver>(1);
                 _disposables.Add(disposable);
             }
 
@@ -171,7 +169,7 @@ namespace PMR
                 _tickables?.Remove(t);
             }
 
-            if (obj is IDisposable d)
+            if (obj is IDestroyCallbackReceiver d)
             {
                 _disposables?.Remove(d);
             }
@@ -181,7 +179,7 @@ namespace PMR
         {
             if (_isCalling)
                 throw new PoorManException("Cannot initialize an object while another initialization is being called.");
-            
+
             foreach (ITypeDeclaration t in _typeDeclarations)
             {
                 t.Collect(obj);
@@ -192,6 +190,7 @@ namespace PMR
             {
                 t.Call(this);
             }
+
             _isCalling = false;
         }
 
@@ -199,7 +198,7 @@ namespace PMR
         {
             if (_isCalling)
                 throw new PoorManException("Cannot initialize an object while another initialization is being called.");
-            
+
             if (obj is GameObject go)
             {
                 Initialize(go);
@@ -260,15 +259,11 @@ namespace PMR
             _typeDeclarations.Add(type);
         }
 
-        [Conditional("UNITY_EDITOR")]
         private static void WarnValueType<T>()
         {
-            if (typeof(T).IsValueType)
-            {
-                Debug.LogWarning($"[PMR] Type `{typeof(T).Name}` is value type. Using it as POCO in SceneRefs/GameObjectRefs will cause boxing allocations. Consider using a class instead.");
-            }
+            UsageWarnings.WarnValueType<T>($"[PMR] Type `{typeof(T).Name}` is value type. Using it as POCO in SceneRefs/GameObjectRefs will cause boxing allocations. Consider using a class instead.");
         }
-        
+
         protected virtual void PrepareComponents()
         {
         }

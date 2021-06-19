@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Debug = UnityEngine.Debug;
 
 namespace PMR.Signals
 {
@@ -15,24 +13,24 @@ namespace PMR.Signals
             
             // ReSharper disable once ConvertToLocalFunction
             Action<object> action = v => callback((T) v);
-            
+
             return SubscribeInternal<T>(action);
         }
-        
+
         public SignalHandle Subscribe<T>(Action callback)
         {
             WarnValueType<T>();
-            
+
             // ReSharper disable once ConvertToLocalFunction
             Action<object> action = v => callback();
-            
+
             return SubscribeInternal<T>(action);
         }
 
         private SignalHandle SubscribeInternal<T>(Action<object> callback)
         {
             WarnValueType<T>();
-            
+
             if (!_subs.TryGetValue(typeof(T), out List<Action<object>> list))
             {
                 list = new List<Action<object>>(1);
@@ -47,12 +45,12 @@ namespace PMR.Signals
         public bool Fire<T>(T obj)
         {
             WarnValueType<T>();
-            
+
             if (!_subs.TryGetValue(typeof(T), out List<Action<object>> list) || list.Count == 0)
             {
                 return false;
             }
-            
+
             for (var i = list.Count - 1; i >= 0; i--)
             {
                 list[i].Invoke(obj);
@@ -65,15 +63,10 @@ namespace PMR.Signals
         {
             return Fire<T>(default);
         }
-        
-        
-        [Conditional("UNITY_EDITOR")]
+
         private static void WarnValueType<T>()
         {
-            if (typeof(T).IsValueType)
-            {
-                Debug.LogWarning($"[PMR] Type `{typeof(T).Name}` is value type. Using it as signal will cause boxing allocations. Consider using a class instead.");
-            }
+            UsageWarnings.WarnValueType<T>($"[PMR] Type `{typeof(T).Name}` is value type. Using it as signal will cause boxing allocations. Consider using a class instead.");
         }
     }
 }
